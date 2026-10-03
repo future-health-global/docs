@@ -14,7 +14,7 @@
 - 加入 FUTURE HEALTH Apple Home Screen 图标和 Web App manifest。
 - 旧 receipt_v1 模板/文件在管理员加载后会自动升级到 V31 源界面。
 
-## V33 更新
+## V34 更新
 - 正式接入 iPhone Safari“添加到主屏幕”图标：`apple-touch-icon.png`。
 - 增加 Web App manifest、favicon 与 iOS Web App 元信息，并加入 `v=32` 缓存版本。
 - 使用已确认的 FUTURE HEALTH 公司图标重新生成 180×180 与 512×512 图标。
@@ -22,7 +22,14 @@
 - iPhone 上测试新图标时，请先删除主屏幕旧图标，再从 Safari 重新“添加到主屏幕”。
 
 
-## V33 图标更新
+## V34 图标更新
 - iPhone“添加到主屏幕”图标更换为最终确认的单边框版本。
 - 更新 Apple Touch Icon、PWA 图标和 favicon。
 - 图标缓存版本号更新为 v=33。
+
+
+## V34 图标更新
+- 使用最终确认的新图标。
+- 去除透明/白色漏边风险，iPhone 主屏幕由 iOS 自己裁切圆角。
+- 更新 apple-touch-icon.png、app-icon.png、favicon-32.png。
+- 图标缓存版本号更新为 v=34。
