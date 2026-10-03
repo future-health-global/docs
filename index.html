@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=yes">
+<title>FUTURE HEALTH</title>
+<meta name="theme-color" content="#0b4f86">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="FUTURE HEALTH">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=33">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=33">
+<link rel="manifest" href="manifest.webmanifest?v=33">
+<link rel="stylesheet" href="styles.css">
+
+<style id="v24-russian-admin-compact">
+/* V24: compact Russian admin primary action pairs */
+html[lang^="ru"] #tab-templates .section-head > .row,
+html[lang^="ru"] #tab-documents .section-head > .row,
+html[lang^="ru"] #tab-users .section-head > .row {
+  display:flex !important;
+  flex-direction:row !important;
+  flex-wrap:nowrap !important;
+  align-items:center !important;
+  gap:8px !important;
+}
+html[lang^="ru"] #newTemplateBtn,
+html[lang^="ru"] #deleteTemplatesModeBtn,
+html[lang^="ru"] #newDocBtn,
+html[lang^="ru"] #deleteDocsModeBtn,
+html[lang^="ru"] #newUserBtn,
+html[lang^="ru"] #deleteUsersModeBtn {
+  width:auto !important;
+  min-width:0 !important;
+  padding:9px 13px !important;
+  border-radius:14px !important;
+  font-size:14px !important;
+  line-height:1.1 !important;
+  font-weight:700 !important;
+  white-space:nowrap !important;
+  flex:0 0 auto !important;
+}
+@media (max-width:640px){
+  html[lang^="ru"] #tab-templates .section-head > .row,
+  html[lang^="ru"] #tab-documents .section-head > .row,
+  html[lang^="ru"] #tab-users .section-head > .row {
+    width:100% !important;
+    justify-content:flex-start !important;
+    gap:7px !important;
+  }
+  html[lang^="ru"] #newTemplateBtn,
+  html[lang^="ru"] #deleteTemplatesModeBtn,
+  html[lang^="ru"] #newDocBtn,
+  html[lang^="ru"] #deleteDocsModeBtn,
+  html[lang^="ru"] #newUserBtn,
+  html[lang^="ru"] #deleteUsersModeBtn {
+    padding:9px 11px !important;
+    font-size:13px !important;
+    border-radius:13px !important;
+  }
+}
+</style>
+
+<style id="v29-admin-tabs-style">
+/* V29: real page-tab navigation. The selected page is controlled by #adminHome[data-page],
+   so language re-rendering cannot accidentally reveal another panel. */
+.admin-tabs{display:flex;gap:0;margin-top:14px;overflow-x:auto;overflow-y:hidden;align-items:flex-end;border-bottom:1px solid #bfc9d6;padding-left:0;scrollbar-width:none}
+.admin-tabs::-webkit-scrollbar{display:none}
+.admin-tabs button{flex:0 0 auto;background:#e8edf3;color:#24384d;border:1px solid #bfc9d6;border-bottom:0;border-radius:8px 8px 0 0;padding:8px 18px;min-height:38px;font-size:14px;font-weight:650;box-shadow:none;margin:0 -1px 0 0;white-space:nowrap}
+.admin-tabs button.active{position:relative;z-index:2;background:#fff;color:#14395f;border-color:#8fa2b8;box-shadow:inset 0 3px 0 #1a4e7a}
+.admin-tabs button.active::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:2px;background:#fff}
+#adminHome[data-page="templates"] .admin-tab,#adminHome[data-page="documents"] .admin-tab,#adminHome[data-page="users"] .admin-tab,#adminHome[data-page="receipts"] .admin-tab{display:none!important}
+#adminHome[data-page="templates"] #tab-templates{display:block!important}
+#adminHome[data-page="documents"] #tab-documents{display:block!important}
+#adminHome[data-page="users"] #tab-users{display:block!important}
+#adminHome[data-page="receipts"] #tab-receipts{display:block!important}
+@media(max-width:640px){.admin-tabs button{padding:8px 13px;font-size:13px;min-height:36px}.admin-tabs{padding-left:2px}}
+</style>
+</head>
+<body>
+<div id="loginView" class="center-shell hidden">
+  <div class="login-card">
+    <div class="login-lang-row"><button id="loginLangBtn" type="button" class="ghost">中文 / RU</button></div>
+    <img src="future-health-logo.png" alt="FUTURE HEALTH" class="login-logo">
+    <h1 id="loginTitle">文件系统</h1>
+    <form id="loginForm">
+      <label><span class="label-head"><span id="loginIdLabel">个人编号</span><small id="loginIdHint" class="inline-hint">请输入手机号</small></span><input id="loginId" inputmode="text" autocapitalize="characters" autocomplete="username" required placeholder="8XXXXXXXXXX"></label>
+      <label><span id="loginPasswordLabel">密码</span><input id="password" type="password" lang="en" autocapitalize="none" autocorrect="off" spellcheck="false" autocomplete="current-password" required></label>
+      <button id="loginSubmitBtn" class="primary wide" type="submit">登录</button>
+    </form>
+    <button id="openRegisterBtn" type="button" class="ghost wide register-entry">注册</button>
+    <p id="loginHelp" class="login-help">忘记密码？请联系管理员，管理员可将密码恢复为初始密码 12345678。</p>
+    <div id="loginError" class="error hidden"></div>
+  </div>
+</div>
+
+<div id="appView" class="app hidden">
+  <header class="topbar">
+    <div class="brand-wrap"><img src="future-health-logo.png" alt="FUTURE HEALTH" class="top-logo"><div id="who" class="muted"></div></div>
+    <div class="top-actions">
+      <button id="changeMyPasswordBtn" type="button" class="ghost">修改密码</button>
+      <button id="toggleLang" type="button" class="ghost">中文 / RU</button>
+      <button id="logoutBtn" type="button" class="ghost">退出</button>
+    </div>
+  </header>
+
+  <main>
+    <section id="userHome" class="panel">
+      <div class="section-head"><div><h2 id="myDocsTitle">我的文件</h2><p id="myDocsHint" class="muted">只显示分配给您的文件。</p></div></div>
+      <div id="userDocs" class="grid"></div>
+      <div id="userEmpty" class="empty hidden">目前没有文件。</div>
+    </section>
+
+    <section id="adminHome" class="hidden" data-page="templates">
+      <nav class="admin-tabs">
+        <button type="button" data-tab="templates" class="active" id="tabTemplatesBtn">模板</button>
+        <button type="button" data-tab="documents" id="tabDocumentsBtn">文件</button>
+        <button type="button" data-tab="users" id="tabUsersBtn">账户</button>
+        <button type="button" data-tab="receipts" id="tabReceiptsBtn">回执<span id="receiptBadge" class="hidden" style="margin-left:5px;background:#d93025;color:#fff;border-radius:999px;padding:1px 6px;font-size:11px;vertical-align:top">0</span></button>
+      </nav>
+
+      <section id="tab-templates" class="panel admin-tab">
+        <div class="section-head">
+          <div><h2 id="templatesTitle">模板管理</h2><p id="templatesHint" class="muted">可导入、替换、新增或删除模板。</p></div>
+          <div class="row"><button id="newTemplateBtn" type="button" class="primary">＋ 添加模板</button><button id="deleteTemplatesModeBtn" type="button" class="danger">删除模板</button></div>
+        </div>
+        <div id="templateBulkBar" class="notice hidden" style="margin-bottom:12px"><div class="row" style="justify-content:space-between"><div><span id="templateBulkHint">请选择要删除的模板，可单选或多选。</span> <strong id="templateBulkCount">0</strong></div><div class="row"><button type="button" id="cancelBulkTemplates" class="ghost small">取消</button><button type="button" id="selectAllBulkTemplates" class="ghost small">全选</button><button type="button" id="confirmBulkTemplates" class="danger small">删除所选</button></div></div></div><div id="templateList"></div>
+      </section>
+
+      <section id="tab-documents" class="panel admin-tab hidden">
+        <div id="fileRequestsBox" class="pending-box hidden"></div>
+        <div class="section-head">
+          <div><h2 id="documentsTitle">文件管理</h2><p id="documentsHint" class="muted">创建、复制、发放、收回或删除文件。管理员查看时为只读模式。</p></div>
+          <div class="row"><button id="deleteDocsModeBtn" type="button" class="danger">删除文件</button><button id="newDocBtn" type="button" class="primary">＋ 新建文件</button></div>
+        </div>
+        <div id="docBulkBar" class="notice hidden" style="margin-bottom:12px"><div class="row" style="justify-content:space-between"><div><span id="docBulkHint">请选择要删除的文件，可单选或多选。</span> <strong id="docBulkCount">0</strong></div><div class="row"><button type="button" id="cancelBulkDocs" class="ghost small">取消</button><button type="button" id="selectAllBulkDocs" class="ghost small">全选</button><button type="button" id="confirmBulkDocs" class="danger small">删除所选</button></div></div></div><div id="adminDocs"></div>
+      </section>
+
+      <section id="tab-users" class="panel admin-tab hidden">
+        <div id="pendingRegistrationsBox" class="pending-box hidden"></div>
+        <div class="section-head">
+          <div><h2 id="usersTitle">账户</h2><p id="usersHint" class="muted">可修改账户名称并重置密码。</p></div>
+          <div class="row"><button id="deleteUsersModeBtn" type="button" class="danger">删除账户</button><button id="newUserBtn" type="button" class="primary">＋ 新建账户</button></div>
+        </div>
+        <div id="userBulkBar" class="notice hidden" style="margin-bottom:12px"><div class="row" style="justify-content:space-between"><div><span id="userBulkHint">请选择要删除的账户，可单选或多选。</span> <strong id="userBulkCount">0</strong></div><div class="row"><button type="button" id="cancelBulkUsers" class="ghost small">取消</button><button type="button" id="selectAllBulkUsers" class="ghost small">全选</button><button type="button" id="confirmBulkUsers" class="danger small">删除所选</button></div></div></div>
+        <div id="userList"></div>
+      </section>
+
+      <section id="tab-receipts" class="panel admin-tab hidden">
+        <div class="section-head"><div><h2 id="receiptsTitle">回执文件夹</h2><p id="receiptsHint" class="muted">用户提交的已签字文件会集中保存在这里。</p></div><div class="row"><button type="button" id="receiptSelectAll" class="ghost small">全选</button><button type="button" id="receiptClearAll" class="ghost small">清空</button><button type="button" id="receiptDeleteSelected" class="danger small">批量删除</button></div></div>
+        <div id="receiptInbox"></div>
+      </section>
+    </section>
+  </main>
+</div>
+
+<dialog id="registerDialog"><div class="dialog-card">
+  <div class="dialog-head"><h3 id="registerTitle">注册</h3><button type="button" class="icon-btn" data-close-dialog="registerDialog">×</button></div>
+  <label id="registerNameRuRow"><span id="registerNameRuLabel">俄文姓名</span><input id="registerNameRu" inputmode="text" autocapitalize="words" spellcheck="false" autocomplete="name" placeholder="Иванов Иван Иванович"></label>
+  <label id="registerNameZhRow"><span id="registerNameZhLabel">中文姓名</span><input id="registerNameZh" inputmode="text" autocapitalize="none" spellcheck="false" autocomplete="name" placeholder="请输入中文姓名"></label>
+  <label><span id="registerPhoneLabel">手机号码 / Телефон</span><input id="registerPhone" inputmode="numeric" maxlength="11" autocomplete="tel" placeholder="8XXXXXXXXXX"></label>
+  <label><span id="registerPasswordLabel">密码</span><input id="registerPassword" type="password" lang="en" autocapitalize="none" autocorrect="off" spellcheck="false" minlength="8" autocomplete="new-password"></label>
+  <label><span id="registerPassword2Label">确认密码</span><input id="registerPassword2" type="password" lang="en" autocapitalize="none" autocorrect="off" spellcheck="false" minlength="8" autocomplete="new-password"></label>
+  <div id="registerHint" class="muted">个人编号使用您的 11 位手机号码，必须以 8 或 1 开头。</div>
+  <div id="registerError" class="error hidden"></div>
+  <div id="registerSuccess" class="notice hidden"></div>
+  <div id="registrationWaitingControls" class="hidden" style="margin-top:12px">
+    <button type="button" id="registrationRefreshBtn" class="primary wide">↻ 更新</button>
+    <button type="button" id="registrationResubmitBtn" class="primary wide hidden" style="margin-top:10px">重新提交审核</button>
+    <p id="registrationRefreshHint" class="muted" style="margin:10px 4px 0;line-height:1.55;text-align:center">请点击“更新”检查审核状态。请不要完全退出系统；保持此页面打开，管理员通过审核后可第一时间收到提示并自动进入系统。</p>
+  </div>
+  <div class="dialog-actions"><button type="button" class="ghost" data-close-dialog="registerDialog" id="registerCancelBtn">取消</button><button type="button" id="registerConfirmBtn" class="primary">注册</button></div>
+</div></dialog>
+
+<dialog id="userDialog"><div class="dialog-card" id="userForm">
+  <div class="dialog-head"><h3 id="newUserTitle">新建账户</h3><button type="button" class="icon-btn" data-close-dialog="userDialog">×</button></div>
+  <label><span id="newUserIdLabel">个人编号</span><input id="newEmployeeCode" inputmode="text" autocapitalize="characters" maxlength="40" autocomplete="off" required placeholder="8XXXXXXXXXX"></label>
+  <label><span id="newUserRuLabel">俄文姓名</span><input id="newNameRu" autocomplete="off" placeholder="Моряхина Анна Владимировна"></label>
+  <label><span id="newUserZhLabel">中文姓名</span><input id="newNameZh" autocomplete="off" placeholder="莫里亚希娜·安娜·弗拉基米罗夫娜"></label>
+  <div id="newUserNotice" class="notice">新账户统一使用初始密码：<strong>12345678</strong></div>
+  <div id="userCreateError" class="error hidden"></div>
+  <div class="dialog-actions"><button type="button" class="ghost" data-close-dialog="userDialog" id="newUserCancelBtn">取消</button><button type="button" id="createUserConfirm" class="primary">创建账户</button></div>
+</div></dialog>
+
+<dialog id="editUserDialog"><div class="dialog-card">
+  <div class="dialog-head"><h3 id="editUserTitle">账户管理</h3><button type="button" class="icon-btn" data-close-dialog="editUserDialog">×</button></div>
+  <input id="editUserId" type="hidden">
+  <div class="notice" id="editUserCode"></div>
+  <label><span id="editRuLabel">俄文姓名</span><input id="editNameRu" inputmode="text" autocapitalize="words" spellcheck="false" autocomplete="off"></label>
+  <label><span id="editZhLabel">中文姓名</span><input id="editNameZh" inputmode="text" autocapitalize="none" spellcheck="false" autocomplete="off"></label>
+  <label id="editRoleRow"><span id="editRoleLabel">权限设置</span><select id="editAccountRole"><option value="user">普通用户</option><option value="manager">二级管理员</option><option value="admin">管理员</option></select></label>
+  <div class="dialog-actions"><button type="button" id="saveUserProfile" class="primary">保存账户名称</button></div>
+  <hr class="sep">
+  <div id="resetPasswordNotice" class="notice">忘记密码时，可恢复为初始密码 <strong>12345678</strong>。</div>
+  <div class="dialog-actions"><button type="button" id="resetPasswordBtn" class="ghost">恢复初始密码 12345678</button></div>
+  <hr class="sep">
+  <button type="button" id="deleteUserBtn" class="danger wide">删除这个账户</button>
+</div></dialog>
+
+<dialog id="changePasswordDialog"><div class="dialog-card">
+  <div class="dialog-head"><h3 id="changePasswordTitle">修改密码</h3><button type="button" class="icon-btn" data-close-dialog="changePasswordDialog">×</button></div>
+  <label><span id="myNewPasswordLabel">新密码</span><input id="myNewPassword" type="password" lang="en" autocapitalize="none" autocorrect="off" spellcheck="false" minlength="8" autocomplete="new-password"></label>
+  <label><span id="myNewPassword2Label">再次输入新密码</span><input id="myNewPassword2" type="password" lang="en" autocapitalize="none" autocorrect="off" spellcheck="false" minlength="8" autocomplete="new-password"></label>
+  <div id="myPasswordError" class="error hidden"></div>
+  <div class="dialog-actions"><button type="button" class="ghost" data-close-dialog="changePasswordDialog" id="changePasswordCancelBtn">取消</button><button type="button" id="saveMyPassword" class="primary">保存新密码</button></div>
+</div></dialog>
+
+<dialog id="templateDialog"><div class="dialog-card">
+  <div class="dialog-head"><h3 id="newTemplateTitle">添加新模板</h3><button type="button" class="icon-btn" data-close-dialog="templateDialog">×</button></div>
+  <label><span id="templateZhLabel">中文标题</span><input id="templateTitleZh" placeholder="新收条模板"></label>
+  <label><span id="templateRuLabel">俄文标题</span><input id="templateTitleRu" placeholder="Новый шаблон расписки"></label>
+  <label><span id="templateModeLabel">创建方式</span><select id="templateMode"><option value="builder">可视化可编辑模板</option><option value="upload">上传 HTML/TXT 源代码</option></select></label>
+  <label id="templateFileRow" class="hidden"><span id="templateFileLabel">模板源代码</span><input id="templateSourceFile" type="file" accept=".txt,.html,text/plain,text/html"></label>
+  <div id="templateHint" class="muted">推荐使用可视化模板：以后可以直接修改金额、正文和提问问题，不需要改代码。</div>
+  <div id="templateCreateError" class="error hidden"></div>
+  <div class="dialog-actions"><button type="button" class="ghost" data-close-dialog="templateDialog" id="templateCancelBtn">取消</button><button type="button" id="createTemplateConfirm" class="primary">添加模板</button></div>
+</div></dialog>
+
+<dialog id="docDialog"><div class="dialog-card" id="docForm">
+  <div class="dialog-head"><h3 id="newDocTitle">新建文件</h3><button type="button" class="icon-btn" data-close-dialog="docDialog">×</button></div>
+  <label><span id="selectTemplateLabel">选择模板或文件</span><select id="docTemplate"></select></label>
+  <label><span id="docRuTitleLabel">俄文标题</span><input id="docTitleRu"></label>
+  <label><span id="docZhTitleLabel">中文标题</span><input id="docTitleZh"></label>
+  <button type="button" id="editDocDraftBtn" class="ghost wide">编辑本文件内容</button>
+  <fieldset><legend id="recipientsLegend">发放对象</legend><div class="row"><button type="button" id="selectAllUsers" class="ghost small">全选</button><button type="button" id="clearUsers" class="ghost small">清空</button></div><div id="recipientList" class="check-list"></div></fieldset>
+  <div class="dialog-actions"><button type="button" class="ghost" data-close-dialog="docDialog" id="docCancelBtn">取消</button><button type="button" id="createDocConfirm" class="primary">创建并发放</button></div>
+</div></dialog>
+
+<dialog id="contentDialog"><div class="dialog-card wide-dialog">
+  <div class="dialog-head"><h3 id="contentDialogTitle">编辑模板内容</h3><button type="button" class="icon-btn" data-close-dialog="contentDialog">×</button></div>
+  <input type="hidden" id="contentTargetKind"><input type="hidden" id="contentTargetId">
+  <div class="notice" id="contentNameNotice">姓名无需写进模板，将自动从接收该文件的用户账户中读取。</div>
+  <div class="form-grid-2">
+    <label><span id="cfgDocTitleRuLabel">文件内俄文标题</span><input id="cfgDocTitleRu"></label>
+    <label><span id="cfgDocTitleZhLabel">文件内中文标题</span><input id="cfgDocTitleZh"></label>
+    <label><span id="cfgPassportSeriesLabel">护照系列</span><input id="cfgPassportSeries"></label>
+    <label><span id="cfgPassportNumberLabel">护照号码</span><input id="cfgPassportNumber"></label>
+  </div>
+  <label><span id="cfgPassportIssuerRuLabel">护照签发机关（俄文）</span><input id="cfgPassportIssuerRu"></label>
+  <label><span id="cfgPassportIssuerZhLabel">护照签发机关（中文）</span><input id="cfgPassportIssuerZh"></label>
+  <div class="form-grid-2">
+    <label><span id="cfgAmountLabel">金额数字</span><input id="cfgAmount"></label>
+    <label><span id="cfgAmountZhLabel">中文金额数字</span><input id="cfgAmountZh"></label>
+    <label><span id="cfgAmountWordsRuLabel">金额大写（俄文）</span><input id="cfgAmountWordsRu"></label>
+    <label><span id="cfgAmountWordsZhLabel">金额大写（中文）</span><input id="cfgAmountWordsZh"></label>
+  </div>
+  <label><span id="cfgParagraphsRuLabel">正文（俄文，每行一个段落）</span><textarea id="cfgParagraphsRu" rows="7"></textarea></label>
+  <label><span id="cfgParagraphsZhLabel">正文（中文，每行一个段落）</span><textarea id="cfgParagraphsZh" rows="7"></textarea></label>
+  <div class="notice" id="cfgTokenHelp">正文中可以使用 {q1}、{q2}……，系统会自动替换为对应回答。需要加粗固定文字时，可写 &lt;b&gt;文字&lt;/b&gt;。</div>
+  <div class="dialog-head question-head"><h4 id="questionsTitle">填写问题</h4><button type="button" id="addQuestionBtn" class="ghost small">＋ 添加问题</button></div>
+  <div id="questionEditor"></div>
+  <div id="contentError" class="error hidden"></div>
+  <div class="dialog-actions"><button type="button" class="ghost" data-close-dialog="contentDialog" id="contentCancelBtn">取消</button><button type="button" id="saveContentBtn" class="primary">保存</button></div>
+</div></dialog>
+
+<dialog id="renameTemplateDialog"><div class="dialog-card">
+  <div class="dialog-head"><h3 id="renameTemplateTitle">重命名模板</h3><button type="button" class="icon-btn" data-close-dialog="renameTemplateDialog">×</button></div>
+  <input type="hidden" id="renameTemplateId">
+  <label><span id="renameTemplateZhLabel">中文名称</span><input id="renameTemplateZh"></label>
+  <label><span id="renameTemplateRuLabel">俄文名称</span><input id="renameTemplateRu"></label>
+  <div id="renameTemplateError" class="error hidden"></div>
+  <div class="dialog-actions"><button type="button" class="ghost" data-close-dialog="renameTemplateDialog" id="renameTemplateCancelBtn">取消</button><button type="button" id="saveTemplateRenameBtn" class="primary">保存</button></div>
+</div></dialog>
+
+<dialog id="assignDialog"><div class="dialog-card">
+  <div class="dialog-head"><h3 id="assignTitle">调整发放对象</h3><button type="button" class="icon-btn" data-close-dialog="assignDialog">×</button></div>
+  <div id="assignRecipientList" class="check-list"></div>
+  <div class="dialog-actions"><button type="button" class="ghost" data-close-dialog="assignDialog" id="assignCancelBtn">取消</button><button type="button" id="saveAssignments" class="primary">保存</button></div>
+</div></dialog>
+
+
+
+<dialog id="renameDocumentDialog"><div class="dialog-card">
+  <div class="dialog-head"><h3 id="renameDocumentTitle">重命名文件</h3><button type="button" class="icon-btn" data-close-dialog="renameDocumentDialog">×</button></div>
+  <input type="hidden" id="renameDocumentId">
+  <label><span id="renameDocumentZhLabel">中文名称</span><input id="renameDocumentZh"></label>
+  <label><span id="renameDocumentRuLabel">俄文名称</span><input id="renameDocumentRu"></label>
+  <div id="renameDocumentError" class="error hidden"></div>
+  <div class="dialog-actions"><button type="button" class="ghost" data-close-dialog="renameDocumentDialog" id="renameDocumentCancelBtn">取消</button><button type="button" id="saveDocumentRenameBtn" class="primary">保存</button></div>
+</div></dialog>
+
+<dialog id="receiptPreviewDialog"><div class="dialog-card" style="max-width:760px">
+  <div class="dialog-head"><h3 id="receiptPreviewTitle">回执预览</h3><button type="button" class="icon-btn" id="receiptPreviewClose">×</button></div>
+  <div style="text-align:center"><img id="receiptPreviewImage" alt="receipt" style="max-width:100%;height:auto;border-radius:12px;border:1px solid #e3e8ef"></div>
+  <p id="receiptPreviewHint" class="muted" style="text-align:center;margin:10px 0 0">手机可长按图片保存，也可以使用下面的下载或转发按钮。</p>
+  <div class="dialog-actions" style="justify-content:center;flex-wrap:wrap">
+    <button type="button" id="receiptPreviewDownload" class="primary">下载</button>
+    <button type="button" id="receiptPreviewDelete" class="danger">删除</button>
+    <button type="button" id="receiptPreviewClose2" class="ghost">关闭</button>
+  </div>
+</div></dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/pinyin-pro"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script>
+// V21: registration input rules, template/file source selector, date picker, simplified signing flow.
+(() => {
+  const cfg=window.APP_CONFIG||{};
+  if(!window.supabase?.createClient||!cfg.SUPABASE_URL||!cfg.SUPABASE_ANON_KEY) return;
+  const c=window.supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+  const ru=()=>((document.documentElement.lang||'').toLowerCase().startsWith('ru')||localStorage.getItem('futureHealthLang')==='ru'||localStorage.getItem('fh_ui_lang')==='ru');
+
+  let audioCtx=null, waitTimer=null, approvedHandled=false;
+  function unlockAudio(){
+    try{
+      const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
+      if(!audioCtx)audioCtx=new AC();
+      if(audioCtx.state==='suspended')audioCtx.resume().catch(()=>{});
+    }catch(e){}
+  }
+  function ding(){
+    try{
+      unlockAudio();if(!audioCtx)return;const n=audioCtx.currentTime;
+      [0,.18].forEach((d,i)=>{const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='sine';o.frequency.value=i?920:760;g.gain.setValueAtTime(.0001,n+d);g.gain.exponentialRampToValueAtTime(.2,n+d+.02);g.gain.exponentialRampToValueAtTime(.0001,n+d+.14);o.connect(g);g.connect(audioCtx.destination);o.start(n+d);o.stop(n+d+.16);});
+    }catch(e){}
+  }
+  async function requestNotification(){try{if('Notification'in window&&Notification.permission==='default')await Notification.requestPermission();}catch(e){}}
+  async function checkApproval(){
+    if(approvedHandled)return 'approved';
+    const success=document.getElementById('registerSuccess');
+    if(!success||success.classList.contains('hidden'))return 'inactive';
+    try{
+      const {data:{session}}=await c.auth.getSession();
+      if(!session?.user?.id)return 'no-session';
+      const [{data,error},{data:pendingRow}]=await Promise.all([
+        c.from('profiles').select('registration_approved').eq('id',session.user.id).maybeSingle(),
+        c.from('pending_registrations').select('status,admin_message,phone,full_name,full_name_zh').eq('auth_user_id',session.user.id).maybeSingle()
+      ]);
+      if(error)return 'error';
+      if(pendingRow?.status==='needs_correction'){
+        const key='fhCorrectionSeen:'+session.user.id+':'+(pendingRow.admin_message||'');
+        if(sessionStorage.getItem(key)!=='1'){
+          sessionStorage.setItem(key,'1');ding();
+          try{if('Notification'in window&&Notification.permission==='granted')new Notification('FUTURE HEALTH',{body:pendingRow.admin_message||(ru()?'Администратор просит исправить данные регистрации.':'管理员要求修改注册信息。')});}catch(e){}
+        }
+        success.textContent=(ru()?'Администратор просит исправить данные：\n':'管理员提示：\n')+(pendingRow.admin_message||'');success.classList.remove('hidden');
+        const phone=document.getElementById('registerPhone');if(phone&&pendingRow.phone)phone.value=pendingRow.phone;
+        const nru=document.getElementById('registerNameRu'),nzh=document.getElementById('registerNameZh');
+        if(nru&&pendingRow.full_name)nru.value=pendingRow.full_name;
+        if(nzh&&(pendingRow.full_name_zh||pendingRow.full_name))nzh.value=pendingRow.full_name_zh||pendingRow.full_name;
+        document.getElementById('registrationResubmitBtn')?.classList.remove('hidden');
+        document.getElementById('registrationRefreshBtn')?.classList.remove('hidden');
+        return 'correction';
+      }
+      document.getElementById('registrationResubmitBtn')?.classList.add('hidden');
+      if(data?.registration_approved===true){
+        approvedHandled=true;ding();
+        const msg=ru()?'Регистрация подтверждена. Вход в систему…':'注册已通过，正在进入系统……';
+        success.textContent=msg;success.classList.remove('hidden');
+        document.getElementById('registrationWaitingControls')?.classList.add('hidden');
+        try{if('Notification'in window&&Notification.permission==='granted')new Notification('FUTURE HEALTH',{body:ru()?'Регистрация подтверждена.':'注册已通过。'});}catch(e){}
+        setTimeout(()=>{try{document.getElementById('registerDialog')?.close()}catch(e){};location.reload();},1000);
+        return 'approved';
+      }
+      return 'pending';
+    }catch(e){}
+  }
+  function startWait(){if(waitTimer)return;checkApproval();waitTimer=setInterval(checkApproval,2000)}
+  function maybeStartWait(){const s=document.getElementById('registerSuccess');if(s&&!s.classList.contains('hidden')&&s.textContent.trim())startWait()}
+  document.getElementById('registerConfirmBtn')?.addEventListener('pointerdown',()=>{unlockAudio();requestNotification()},{passive:true});
+  document.getElementById('registrationRefreshBtn')?.addEventListener('click',async()=>{unlockAudio();const state=await checkApproval();if(!approvedHandled&&state==='pending'){const success=document.getElementById('registerSuccess');if(success){success.textContent=ru()?'Заявка всё ещё находится на проверке. Оставьте эту страницу открытой и нажмите «Обновить» позже.':'注册申请仍在审核中。请保持此页面打开，稍后再次点击“更新”。';success.classList.remove('hidden')}}});
+  new MutationObserver(maybeStartWait).observe(document.body,{subtree:true,childList:true,attributes:true,characterData:true});
+  window.addEventListener('pageshow',()=>{maybeStartWait();checkApproval()});
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkApproval()});
+  setTimeout(maybeStartWait,400);
+
+  // Receipt inbox V18: bilingual label + per-user folders + view/download/delete + batch delete.
+  const tabBtn=document.getElementById('tabReceiptsBtn'),panel=document.getElementById('tab-receipts'),box=document.getElementById('receiptInbox'),badge=document.getElementById('receiptBadge');
+  const preview=document.getElementById('receiptPreviewDialog'),previewImg=document.getElementById('receiptPreviewImage');
+  const previewTitle=document.getElementById('receiptPreviewTitle'),previewHint=document.getElementById('receiptPreviewHint');
+  const previewDownload=document.getElementById('receiptPreviewDownload'),previewDelete=document.getElementById('receiptPreviewDelete');
+  let currentBlob=null,currentName='receipt.png',currentObjectUrl=null,currentReceiptId=null,currentReceiptPath=null,receiptManagerMode=false;
+  const selectedReceipts=new Set();
+  function updateReceiptLang(){
+    if(tabBtn){const n=badge;tabBtn.textContent=ru()?'Расписки':'回执';if(n)tabBtn.appendChild(n)}
+    const title=document.getElementById('receiptsTitle'),hint=document.getElementById('receiptsHint');
+    if(title)title.textContent=ru()?'Папка расписок':'回执文件夹';
+    if(hint)hint.textContent=ru()?'Подписанные документы сгруппированы по пользователям.':'已签字回执按用户分别归档。';
+    if(previewTitle)previewTitle.textContent=ru()?'Просмотр расписки':'回执预览';
+    if(previewHint)previewHint.textContent=ru()?'На телефоне можно удерживать изображение для сохранения или нажать «Скачать».':'手机可长按图片保存，也可以点击“下载”。';
+    if(previewDownload){previewDownload.textContent=ru()?'Скачать':'下载';previewDownload.classList.toggle('hidden',receiptManagerMode)}
+    if(previewDelete){previewDelete.textContent=ru()?'Удалить':'删除';previewDelete.classList.toggle('hidden',receiptManagerMode)}
+    const c2=document.getElementById('receiptPreviewClose2');if(c2)c2.textContent=ru()?'Закрыть':'关闭';
+    const sa=document.getElementById('receiptSelectAll'),cl=document.getElementById('receiptClearAll'),del=document.getElementById('receiptDeleteSelected');
+    if(sa){sa.textContent=ru()?'Выбрать все':'全选';sa.classList.toggle('hidden',receiptManagerMode)}if(cl){cl.textContent=ru()?'Очистить':'清空';cl.classList.toggle('hidden',receiptManagerMode)}if(del){del.textContent=ru()?'Удалить выбранные':'批量删除';del.classList.toggle('hidden',receiptManagerMode)}
+  }
+  async function fetchReceipt(path){const {data,error}=await c.storage.from('signed-receipts').download(path);if(error||!data)throw error||new Error('DOWNLOAD_FAILED');return data}
+  async function markRead(id){try{await c.from('signed_receipts').update({read_at:new Date().toISOString()}).eq('id',id)}catch(e){}}
+  async function deleteReceipt(id,path,ask=true){
+    if(ask&&!confirm(ru()?'Удалить эту расписку?':'确认删除这个回执？'))return false;
+    const s=await c.storage.from('signed-receipts').remove([path]);if(s.error)throw s.error;
+    const d=await c.from('signed_receipts').delete().eq('id',id);if(d.error)throw d.error;
+    selectedReceipts.delete(id);return true;
+  }
+  async function openPreview(path,name,rid){try{const blob=await fetchReceipt(path);currentBlob=blob;currentName=name||'receipt.png';currentReceiptId=rid;currentReceiptPath=path;if(currentObjectUrl)URL.revokeObjectURL(currentObjectUrl);currentObjectUrl=URL.createObjectURL(blob);previewImg.src=currentObjectUrl;updateReceiptLang();try{preview.showModal()}catch(e){preview.setAttribute('open','')}await markRead(rid);loadInbox()}catch(e){alert(ru()?'Не удалось открыть файл.':'无法打开文件。')}}
+  async function saveBlob(blob,name){const file=new File([blob],name,{type:blob.type||'image/png'});if(navigator.share&&(!navigator.canShare||navigator.canShare({files:[file]}))&&/iPhone|iPad|iPod/i.test(navigator.userAgent)){try{await navigator.share({files:[file],title:name});return}catch(e){if(e?.name==='AbortError')return}}const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000)}
+  previewDownload?.addEventListener('click',async()=>{if(receiptManagerMode)return;if(currentBlob)await saveBlob(currentBlob,currentName)});
+  previewDelete?.addEventListener('click',async()=>{if(receiptManagerMode)return;if(!currentReceiptId||!currentReceiptPath)return;try{if(await deleteReceipt(currentReceiptId,currentReceiptPath,true)){closePreview();await loadInbox()}}catch(e){alert(ru()?'Не удалось удалить файл.':'删除失败。')}});
+  function closePreview(){try{preview.close()}catch(e){preview.removeAttribute('open')}}
+  document.getElementById('receiptPreviewClose')?.addEventListener('click',closePreview);document.getElementById('receiptPreviewClose2')?.addEventListener('click',closePreview);
+  function attachInboxHandlers(){
+    box.querySelectorAll('.receipt-view').forEach(b=>b.addEventListener('click',()=>openPreview(b.dataset.path,b.dataset.name,b.closest('[data-rid]').dataset.rid)));
+    if(!receiptManagerMode)box.querySelectorAll('.receipt-download').forEach(b=>b.addEventListener('click',async()=>{try{const blob=await fetchReceipt(b.dataset.path);await markRead(b.closest('[data-rid]').dataset.rid);await saveBlob(blob,b.dataset.name||'receipt.png');loadInbox()}catch(e){alert(ru()?'Не удалось скачать файл.':'下载失败。')}}));
+    if(!receiptManagerMode)box.querySelectorAll('.receipt-delete').forEach(b=>b.addEventListener('click',async()=>{try{const row=b.closest('[data-rid]');if(await deleteReceipt(row.dataset.rid,b.dataset.path,true))loadInbox()}catch(e){alert(ru()?'Не удалось удалить файл.':'删除失败。')}}));
+    if(!receiptManagerMode)box.querySelectorAll('.receipt-check').forEach(ch=>ch.addEventListener('change',()=>{if(ch.checked)selectedReceipts.add(ch.value);else selectedReceipts.delete(ch.value)}));
+  }
+  async function loadInbox(){
+    if(!box)return;updateReceiptLang();const {data:{session}}=await c.auth.getSession();if(!session)return;const {data:admin}=await c.from('profiles').select('is_admin,account_role').eq('id',session.user.id).maybeSingle();const role=admin?.account_role||(admin?.is_admin?'admin':'user');if(!admin?.is_admin&&!['admin','manager'].includes(role))return;receiptManagerMode=role==='manager'&&!admin?.is_admin;updateReceiptLang();
+    const {data:rows,error}=await c.from('signed_receipts').select('id,document_id,user_id,storage_path,file_name,created_at,read_at').order('created_at',{ascending:false});if(error)return;
+    const list=rows||[],unread=list.filter(x=>!x.read_at).length;if(badge){badge.textContent=String(unread);badge.classList.toggle('hidden',!unread)}
+    if(!list.length){box.innerHTML='<div class="empty">'+(ru()?'Полученных расписок пока нет.':'暂时没有收到回执。')+'</div>';return}
+    const uids=[...new Set(list.map(x=>x.user_id))],dids=[...new Set(list.map(x=>x.document_id))];
+    const [{data:us},{data:ds}]=await Promise.all([c.from('profiles').select('id,display_name_ru,display_name_zh,employee_code').in('id',uids),c.from('documents').select('id,title_ru,title_zh').in('id',dids)]);
+    const um=Object.fromEntries((us||[]).map(x=>[x.id,x])),dm=Object.fromEntries((ds||[]).map(x=>[x.id,x]));
+    const groups={};for(const x of list)(groups[x.user_id]??=[]).push(x);
+    box.innerHTML=Object.entries(groups).map(([uid,items])=>{const u=um[uid]||{},name=ru()?(u.display_name_ru||u.display_name_zh||u.employee_code):(u.display_name_zh||u.display_name_ru||u.employee_code),nUnread=items.filter(x=>!x.read_at).length;
+      const files=items.map(x=>{const d=dm[x.document_id]||{},title=ru()?(d.title_ru||d.title_zh||'Документ'):(d.title_zh||d.title_ru||'文件'),when=new Date(x.created_at).toLocaleString(ru()?'ru-RU':'zh-CN');return `<div class="doc-row" data-rid="${x.id}" style="padding:12px 0;border-bottom:1px solid #e5eaf0"><div class="row" style="align-items:flex-start">${receiptManagerMode?'':`<label style="padding-top:3px"><input class="receipt-check" type="checkbox" value="${x.id}" ${selectedReceipts.has(x.id)?'checked':''}></label>`}<div style="flex:1"><div style="font-weight:700">${title}${x.read_at?'':' <span style="display:inline-block;width:8px;height:8px;background:#d93025;border-radius:50%;vertical-align:middle"></span>'}</div><div class="muted" style="font-size:12px;margin:4px 0 8px">${when}</div><div class="row"><button type="button" class="ghost small receipt-view" data-path="${x.storage_path}" data-name="${x.file_name}">${ru()?'Просмотр':'查看'}</button>${receiptManagerMode?'':`<button type="button" class="ghost small receipt-download" data-path="${x.storage_path}" data-name="${x.file_name}">${ru()?'Скачать':'下载'}</button><button type="button" class="danger small receipt-delete" data-path="${x.storage_path}">${ru()?'Удалить':'删除'}</button>`}</div></div></div></div>`}).join('');
+      return `<details class="receipt-user-folder" open style="border:1px solid #e5eaf0;border-radius:14px;padding:12px 14px;margin-bottom:12px"><summary style="cursor:pointer;font-weight:800">📁 ${name||''} <span class="pill">${items.length}</span>${nUnread?` <span class="notify-badge">${nUnread}</span>`:''}</summary><div style="padding-top:6px">${files}</div></details>`}).join('');attachInboxHandlers();
+  }
+  document.getElementById('receiptSelectAll')?.addEventListener('click',()=>{if(receiptManagerMode)return;box.querySelectorAll('.receipt-check').forEach(ch=>{ch.checked=true;selectedReceipts.add(ch.value)})});
+  document.getElementById('receiptClearAll')?.addEventListener('click',()=>{if(receiptManagerMode)return;selectedReceipts.clear();box.querySelectorAll('.receipt-check').forEach(ch=>ch.checked=false)});
+  document.getElementById('receiptDeleteSelected')?.addEventListener('click',async()=>{if(receiptManagerMode)return;if(!selectedReceipts.size)return alert(ru()?'Выберите хотя бы одну расписку.':'请至少选择一个回执。');if(!confirm(ru()?`Удалить выбранные расписки (${selectedReceipts.size})?`:`确认删除所选 ${selectedReceipts.size} 个回执？`))return;const rows=[...box.querySelectorAll('[data-rid]')].filter(r=>selectedReceipts.has(r.dataset.rid));for(const row of rows){const btn=row.querySelector('.receipt-delete');try{await deleteReceipt(row.dataset.rid,btn?.dataset.path,false)}catch(e){}}selectedReceipts.clear();loadInbox()});
+  window.FH_LOAD_RECEIPTS=loadInbox; if(tabBtn)tabBtn.addEventListener('click',()=>loadInbox());
+  new MutationObserver(()=>{updateReceiptLang();if(panel&&!panel.classList.contains('hidden'))loadInbox()}).observe(document.documentElement,{attributes:true,attributeFilter:['lang']});
+  updateReceiptLang();setTimeout(loadInbox,1000);setInterval(loadInbox,15000);
+})();
+</script>
+
+<script id="v24-russian-admin-actions">
+(()=>{
+  function isRu(){return (document.documentElement.lang||'').toLowerCase().startsWith('ru')}
+  function setText(id,ruText,zhText){const e=document.getElementById(id);if(e)e.textContent=isRu()?ruText:zhText}
+  function normalizeOrder(row,addId,deleteId){
+    if(!row)return;
+    const add=document.getElementById(addId), del=document.getElementById(deleteId);
+    if(add&&del){row.appendChild(add);row.appendChild(del)}
+  }
+  function apply(){
+    setText('newTemplateBtn','+ Шаблон','＋ 添加模板');
+    setText('deleteTemplatesModeBtn','− Шаблон','删除模板');
+    setText('newDocBtn','+ Документы','＋ 新建文件');
+    setText('deleteDocsModeBtn','− Документы','删除文件');
+    setText('newUserBtn','+ Аккаунты','＋ 新建账户');
+    setText('deleteUsersModeBtn','− Аккаунты','删除账户');
+    normalizeOrder(document.querySelector('#tab-templates .section-head > .row'),'newTemplateBtn','deleteTemplatesModeBtn');
+    normalizeOrder(document.querySelector('#tab-documents .section-head > .row'),'newDocBtn','deleteDocsModeBtn');
+    normalizeOrder(document.querySelector('#tab-users .section-head > .row'),'newUserBtn','deleteUsersModeBtn');
+  }
+  const obs=new MutationObserver(()=>apply());
+  obs.observe(document.documentElement,{attributes:true,attributeFilter:['lang']});
+  document.addEventListener('DOMContentLoaded',apply);
+  setTimeout(apply,50); setTimeout(apply,500);
+})();
+</script>
+
+<script id="v25-language-and-name-fixes">
+(()=>{
+  // V28: tab preservation is handled atomically by app.js setLang(); no extra click listener here.
+
+
+  function russianNameCase(value){
+    return String(value||'')
+      .replace(/[^А-Яа-яЁё ]/g,'')
+      .replace(/[А-Яа-яЁё]+/g,w=>w.charAt(0).toUpperCase()+w.slice(1).toLowerCase());
+  }
+  function chineseOnly(value){
+    // Han characters + spaces only. This runs after IME composition, so Pinyin input still works.
+    return String(value||'').replace(/[^\p{Script=Han} ]/gu,'');
+  }
+  function preserveCaretTransform(el,fn){
+    if(!el)return;
+    const start=el.selectionStart, old=el.value, next=fn(old);
+    if(next===old)return;
+    el.value=next;
+    try{ const pos=Math.min(start??next.length,next.length); el.setSelectionRange(pos,pos); }catch(e){}
+  }
+  function bindRussian(id){
+    const el=document.getElementById(id); if(!el||el.dataset.v25Bound)return; el.dataset.v25Bound='1';
+    el.addEventListener('input',()=>preserveCaretTransform(el,russianNameCase));
+    el.addEventListener('blur',()=>{el.value=russianNameCase(el.value).trim().replace(/ +/g,' ')});
+  }
+  function bindChinese(id){
+    const el=document.getElementById(id); if(!el||el.dataset.v25Bound)return; el.dataset.v25Bound='1';
+    let composing=false;
+    el.addEventListener('compositionstart',()=>{composing=true});
+    el.addEventListener('compositionend',()=>{composing=false;preserveCaretTransform(el,chineseOnly)});
+    el.addEventListener('input',()=>{if(!composing)preserveCaretTransform(el,chineseOnly)});
+    el.addEventListener('blur',()=>{el.value=chineseOnly(el.value).trim().replace(/ +/g,' ')});
+  }
+  bindRussian('registerNameRu'); bindRussian('editNameRu');
+  bindChinese('registerNameZh'); bindChinese('editNameZh');
+
+  // Keep password fields native. iOS chooses the system keyboard language; the page must not replace or lock it.
+  ['password','registerPassword','registerPassword2','myNewPassword','myNewPassword2'].forEach(id=>{
+    const el=document.getElementById(id); if(!el)return;
+    el.removeAttribute('inputmode'); el.removeAttribute('readonly'); el.setAttribute('lang','en');
+    el.setAttribute('autocapitalize','none'); el.setAttribute('autocorrect','off'); el.spellcheck=false;
+  });
+})();
+</script>
+
+
+
+</body></html>

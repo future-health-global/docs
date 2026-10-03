@@ -1,0 +1,108 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="app-icon.png"><title>FUTURE HEALTH</title>
+<meta name="theme-color" content="#0b4f86">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="FUTURE HEALTH">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=32">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=32">
+<link rel="manifest" href="manifest.webmanifest?v=32">
+<style>
+*{box-sizing:border-box}body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#eef2f7;margin:0;color:#17324d}.status-box{max-width:560px;margin:15vh auto;background:#fff;padding:28px;border-radius:22px;box-shadow:0 8px 28px rgba(0,0,0,.08);text-align:center}.err{color:#b42318}.viewer-shell{width:100%;max-width:760px;margin:0 auto;padding:10px 0 14px}.viewer-frame{display:block;width:100%;border:0;background:transparent;min-height:420px}.system-footer{width:calc(100% - 24px);max-width:680px;margin:6px auto 18px;text-align:center;position:relative;z-index:99999}.system-back{display:block;width:100%;text-decoration:none;border:1px solid #b7cbe3;border-radius:16px;padding:12px 22px;background:#fff;color:#1a4e7a;font-weight:750;font-size:15px;box-shadow:none}.submit-ok-dialog{border:0;border-radius:20px;padding:0;max-width:420px;width:calc(100% - 32px);box-shadow:0 20px 70px rgba(0,0,0,.3)}.submit-ok-card{padding:24px;font-family:system-ui,-apple-system,sans-serif;text-align:center}.submit-ok-card h3{margin:0 0 10px;font-size:21px}.submit-ok-card p{margin:0 0 20px;line-height:1.55;color:#40556b}.submit-ok-card button{width:100%;border:0;border-radius:14px;padding:12px;background:#0b4f86;color:#fff;font-weight:800;font-size:16px}@media(max-width:720px){.viewer-shell{padding-top:0}.system-footer{margin-top:6px;margin-bottom:14px}}
+</style></head>
+<body>
+<div class="status-box" id="status"></div>
+<div id="viewerShell" class="viewer-shell" hidden>
+  <iframe id="docFrame" class="viewer-frame" title="FUTURE HEALTH document" scrolling="no"></iframe>
+  <div class="system-footer"><a id="systemBack" class="system-back" href="./">返回</a></div>
+</div>
+<dialog id="submitSuccessDialog" class="submit-ok-dialog"><div class="submit-ok-card"><h3 id="submitSuccessTitle">提交成功</h3><p id="submitSuccessText">已成功提交，返回主页。</p><button type="button" id="submitSuccessOk">确认</button></div></dialog>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js"></script><script>
+(async()=>{
+ const cfg=window.APP_CONFIG,sb=window.supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY);
+ const uiLang=(localStorage.getItem('fh_lang')||localStorage.getItem('fh_ui_lang')||localStorage.getItem('fb_ui_lang')||'zh')==='ru'?'ru':'zh';
+ const txt=uiLang==='zh'?{opening:'正在验证权限并打开文件…',missing:'缺少文件编号。',denied:'没有权限查看此文件，或文件不存在。',nosource:'该文件尚未导入原始源代码。',back:'返回',readonly:'管理员只读查看'}:{opening:'Проверка доступа и открытие документа…',missing:'Не указан номер документа.',denied:'Нет доступа к документу или документ не существует.',nosource:'Исходный код этого документа ещё не загружен.',back:'Назад',readonly:'Просмотр администратора: только чтение'};
+ document.documentElement.lang=uiLang==='zh'?'zh-CN':'ru';document.getElementById('status').textContent=txt.opening;const successDlg=document.getElementById('submitSuccessDialog'),successTitle=document.getElementById('submitSuccessTitle'),successText=document.getElementById('submitSuccessText'),successOk=document.getElementById('submitSuccessOk');const showSubmitSuccess=(zh)=>new Promise(resolve=>{if(successTitle)successTitle.textContent=zh?'提交成功':'Отправлено';if(successText)successText.textContent=zh?'已成功提交，返回主页。':'Документ успешно отправлен. Возврат на главную страницу.';if(successOk)successOk.textContent=zh?'确认':'ОК';if(!successDlg||!successOk){alert(zh?'已成功提交，返回主页。':'Документ успешно отправлен. Возврат на главную страницу.');resolve();return}const done=()=>{successOk.removeEventListener('click',done);try{successDlg.close()}catch(e){successDlg.removeAttribute('open')}resolve()};successOk.addEventListener('click',done);try{successDlg.showModal()}catch(e){successDlg.setAttribute('open','')}});
+ const qs=new URLSearchParams(location.search),id=qs.get('id'),requestedAdmin=qs.get('mode')==='admin';
+ const {data:{session}}=await sb.auth.getSession();if(!session){location.replace('./');return}
+ if(!id){document.getElementById('status').innerHTML='<span class="err">'+txt.missing+'</span>';return}
+ let adminMode=false;
+ if(requestedAdmin){const {data:p}=await sb.from('profiles').select('is_admin,account_role').eq('id',session.user.id).single();adminMode=!!(p?.is_admin||['admin','manager'].includes(p?.account_role))}
+ const {data,error}=await sb.from('documents').select('id,source_html,title_ru,title_zh,payload').eq('id',id).single();
+ if(error||!data){document.getElementById('status').innerHTML='<span class="err">'+txt.denied+'</span>';return}
+ if(!data.source_html){document.getElementById('status').innerHTML='<span class="err">'+txt.nosource+'</span>';return}
+ let profile=null;
+ if(adminMode){
+   const {data:as}=await sb.from('document_assignments').select('user_id').eq('document_id',id).eq('is_active',true);
+   const ids=[...new Set((as||[]).map(x=>x.user_id))];
+   if(ids.length===1){const {data:p}=await sb.from('profiles').select('id,display_name_ru,display_name_zh,employee_code').eq('id',ids[0]).single();profile=p||null}
+   if(!profile)profile={display_name_ru:'[ФИО пользователя]',display_name_zh:'[用户名]',employee_code:''};
+ }else{
+   const {data:p}=await sb.from('profiles').select('id,display_name_ru,display_name_zh,employee_code').eq('id',session.user.id).single();profile=p||null;
+ }
+ const context={profile:profile||{},payload:data.payload||{},document_id:id,admin_readonly:adminMode};
+ let html=data.source_html;if(data.payload?.template_config?.builder_type==='receipt_v1'&&!String(html||'').includes('V31 guided filling UX')){try{const r=await fetch('receipt-template.html',{cache:'no-store'});if(r.ok)html=await r.text()}catch(e){console.warn('V31 receipt source fallback',e)}}
+ const ctxScript=`<script>window.FH_DOC_CONTEXT=${JSON.stringify(context).replace(/</g,'\\u003c')};<\/script>`;
+ const injectedStyle=`<style id="fh-system-style">.fh-lang-toggle{border:0;border-radius:999px;padding:8px 14px;background:#0b4f86;color:#fff;font-size:13px;font-weight:700;cursor:pointer;margin-left:8px}.fh-readonly-badge{display:block;max-width:680px;width:calc(100% - 24px);margin:12px auto 8px;text-align:center;background:#fff3cd;color:#7a5200;border:1px solid #f0cc6a;border-radius:999px;padding:8px 12px;font:700 12px system-ui,-apple-system,sans-serif}div[style*="height:96px"][style*="border-bottom"]::after{content:"";position:absolute;left:0;right:0;bottom:-1px;border-bottom:1px solid #000;z-index:50;pointer-events:none}#printDocBtn,#printImageBtn,#infoText,#submissionInfo,#completionMessage{display:none!important}${adminMode?'.smart-form,.submission-section,.signature-area,#formHeading,#fillInfoLabel,#completionMessage,.footnote{display:none!important}':''}</style>`;
+ const badge=adminMode?`<div class="fh-readonly-badge">${txt.readonly}</div>`:'';
+ html=html.replace(/<body([^>]*)>/i,m=>m+ctxScript+injectedStyle+badge);
+ const frame=document.getElementById('docFrame'),shell=document.getElementById('viewerShell'),status=document.getElementById('status'),back=document.getElementById('systemBack');
+ back.href=adminMode?'./index.html#documents':'./index.html';back.textContent='← '+txt.back;
+ frame.srcdoc=html;status.hidden=true;shell.hidden=false;
+ function setupFrame(){
+   const d=frame.contentDocument,w=frame.contentWindow;if(!d||!w)return;
+   const resize=()=>{try{
+     const body=d.body;if(!body)return;
+     let bottom=0;
+     for(const el of Array.from(body.children)){
+       const cs=w.getComputedStyle(el);if(cs.display==='none'||cs.visibility==='hidden')continue;
+       const r=el.getBoundingClientRect();
+       if(r.left<-1000||r.top<-1000)continue;
+       bottom=Math.max(bottom,r.bottom+w.scrollY);
+     }
+     const bodyStyle=w.getComputedStyle(body),padBottom=parseFloat(bodyStyle.paddingBottom)||0;
+     const h=Math.max(420,Math.ceil(bottom+padBottom+2));
+     if(Math.abs((parseFloat(frame.style.height)||0)-h)>2)frame.style.height=h+'px';
+   }catch{}};
+   resize();setTimeout(resize,120);setTimeout(resize,450);setTimeout(resize,1000);
+   try{new ResizeObserver(resize).observe(d.documentElement);new MutationObserver(resize).observe(d.documentElement,{subtree:true,childList:true,attributes:true,characterData:true})}catch{}
+   const sel=d.getElementById('languageSelect');if(sel){sel.style.display='none';const lbl=d.getElementById('languageLabel')||d.getElementById('toolbarLabel');if(lbl)lbl.style.display='none';let btn=d.getElementById('fhLangToggle');if(!btn){btn=d.createElement('button');btn.type='button';btn.id='fhLangToggle';btn.className='fh-lang-toggle';const r=d.getElementById('refreshBtn')||d.getElementById('refreshPageBtn');if(r&&r.parentElement===sel.parentElement)r.insertAdjacentElement('beforebegin',btn);else sel.parentElement?.appendChild(btn)}const sync=()=>{const zh=sel.value==='zh';const l=zh?'zh':'ru';localStorage.setItem('fh_lang',l);localStorage.setItem('fh_ui_lang',l);localStorage.setItem('fb_ui_lang',l);btn.textContent=zh?'RU':'中文';back.textContent=zh?'← 返回主页':'← На главную';document.documentElement.lang=zh?'zh-CN':'ru';resize()};sync();sel.addEventListener('change',()=>setTimeout(sync,0));btn.onclick=()=>{sel.value=sel.value==='zh'?'ru':'zh';sel.dispatchEvent(new Event('change',{bubbles:true}));setTimeout(sync,0)}}
+   const refresh=d.getElementById('refreshBtn')||d.getElementById('refreshPageBtn');if(refresh){refresh.addEventListener('click',ev=>{ev.preventDefault();ev.stopImmediatePropagation();try{window.scrollTo({top:0,left:0,behavior:'smooth'})}catch(e){window.scrollTo(0,0)};frame.srcdoc=html},true)}
+   const clearSig=d.getElementById('clearSignatureBtn'),confirmSig=d.getElementById('confirmSignatureBtn');if(clearSig&&confirmSig&&clearSig.compareDocumentPosition(confirmSig)&Node.DOCUMENT_POSITION_FOLLOWING){clearSig.parentElement?.insertBefore(confirmSig,clearSig)}
+   const createImg=d.getElementById('createImageBtn');if(createImg){const sty=d.createElement('style');sty.textContent='#createImageBtn:disabled{background:#cfd5dc!important;color:#f7f8fa!important;opacity:1!important}';d.head.appendChild(sty)}
+   const oldFoot=d.getElementById('footnote');if(oldFoot&&/печати|печат|打印|创建图像/i.test(oldFoot.textContent||''))oldFoot.style.display='none';
+   const oldInfo=d.getElementById('infoText');if(oldInfo)oldInfo.style.display='none';
+   const oldPrint=d.getElementById('printDocBtn');if(oldPrint)oldPrint.style.display='none';
+   const oldPaper=d.getElementById('printImageBtn');if(oldPaper)oldPaper.style.display='none';
+   if(!adminMode){
+     const shareBtn=d.getElementById('shareImageBtn');
+     if(shareBtn){
+       const submitIsZh=()=>((d.getElementById('languageSelect')?.value)||uiLang)==='zh';
+       const setSubmitLabel=()=>{if(!shareBtn.disabled)shareBtn.textContent=submitIsZh()?'提交':'Отправить'};
+       setSubmitLabel();d.getElementById('languageSelect')?.addEventListener('change',()=>setTimeout(setSubmitLabel,0));
+       shareBtn.addEventListener('click',async ev=>{
+         ev.preventDefault();ev.stopImmediatePropagation();
+         const img=d.querySelector('#imageContainer img');if(!img?.src)return;
+         const old=shareBtn.textContent;const zh=submitIsZh();shareBtn.disabled=true;shareBtn.textContent=zh?'正在提交…':'Отправка…';
+         try{
+           const blob=await(await fetch(img.src)).blob();
+           const stamp=new Date().toISOString().replace(/[:.]/g,'-');
+           const fileName=`FUTURE_HEALTH_${id}_${stamp}.png`;
+           const path=`${session.user.id}/${id}/${stamp}.png`;
+           const {error:upErr}=await sb.storage.from('signed-receipts').upload(path,blob,{contentType:'image/png',upsert:false});
+           if(upErr)throw upErr;
+           const {error:dbErr}=await sb.from('signed_receipts').insert({document_id:id,user_id:session.user.id,storage_path:path,file_name:fileName});
+           if(dbErr)throw dbErr;
+           shareBtn.textContent=zh?'✓ 已提交':'✓ Отправлено';
+           try{const AC=window.AudioContext||window.webkitAudioContext,ac=new AC(),o=ac.createOscillator(),g=ac.createGain();o.frequency.value=850;g.gain.value=.12;o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+.12);setTimeout(()=>ac.close(),300)}catch(e){}
+           await showSubmitSuccess(zh);location.replace('./index.html');
+         }catch(e){shareBtn.disabled=false;shareBtn.textContent=old;alert(submitIsZh()?'提交失败，请重试。':'Не удалось отправить. Повторите попытку.');}
+       },true);
+     }
+   }
+   if(adminMode){setTimeout(()=>{d.querySelectorAll('input,textarea,select,button').forEach(el=>{if(el.id==='fhLangToggle'||el.id==='languageSelect'||el.id==='refreshBtn'||el.id==='refreshPageBtn')return;el.disabled=true});resize()},180)}
+ }
+ frame.addEventListener('load',setupFrame);
+})();
+</script></body></html>
